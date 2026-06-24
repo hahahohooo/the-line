@@ -622,20 +622,27 @@ function setFreq(n){
   drawDial();startSnd(n);
 }
 
-document.getElementById('dial-cv').addEventListener('click',e=>{
-  if(didDrag)return;
-  const r=e.currentTarget.getBoundingClientRect(),sc=DC/r.width;
-  const lx=(e.clientX-r.left)*sc-HALF,ly=(e.clientY-r.top)*sc-HALF;
+function selectAtPoint(clientX,clientY){
+  const r=document.getElementById('dial-cv').getBoundingClientRect(),sc=DC/r.width;
+  const lx=(clientX-r.left)*sc-HALF,ly=(clientY-r.top)*sc-HALF;
   let hit=-1,hd=Infinity;
   for(let n=1;n<=9;n++){const a=holeAngle(n)+dialRot;const hx=H_ORBIT*Math.cos(a),hy=H_ORBIT*Math.sin(a);const d=Math.hypot(lx-hx,ly-hy);if(d<H_R*1.7&&d<hd){hd=d;hit=n;}}
   if(hit>0){const delta=(((-Math.PI/2-holeAngle(hit))-dialRot+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;animTo(dialRot+delta);setFreq(hit);}
+}
+document.getElementById('dial-cv').addEventListener('click',e=>{
+  if(didDrag)return;
+  selectAtPoint(e.clientX,e.clientY);
 });
 document.getElementById('dial-disc').addEventListener('mousedown',e=>{isDrag=true;didDrag=false;dragA0=getA(e);dragR0=dialRot;e.preventDefault();e.stopPropagation();});
-document.getElementById('dial-disc').addEventListener('touchstart',e=>{isDrag=true;didDrag=false;dragA0=getA(e);dragR0=dialRot;e.preventDefault();},{passive:false});
+document.getElementById('dial-disc').addEventListener('touchstart',e=>{initAC();if(AC.state==='suspended')AC.resume();isDrag=true;didDrag=false;dragA0=getA(e);dragR0=dialRot;e.preventDefault();},{passive:false});
 window.addEventListener('mousemove',e=>{if(!isDrag)return;didDrag=true;dialRot=dragR0+(getA(e)-dragA0);const n=nearest();if(n>0&&n!==selFreq)setFreq(n);drawDial();});
 window.addEventListener('touchmove',e=>{if(!isDrag)return;didDrag=true;dialRot=dragR0+(getA(e)-dragA0);const n=nearest();if(n>0&&n!==selFreq)setFreq(n);drawDial();},{passive:true});
 window.addEventListener('mouseup',()=>{if(!isDrag)return;isDrag=false;if(!didDrag)return;const n=nearest();if(n<1)return;const d=(((-Math.PI/2-holeAngle(n))-dialRot+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;animTo(dialRot+d*1.02,500);});
-window.addEventListener('touchend',()=>{if(!isDrag)return;isDrag=false;if(!didDrag)return;const n=nearest();if(n<1)return;const d=(((-Math.PI/2-holeAngle(n))-dialRot+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;animTo(dialRot+d*1.02,500);});
+window.addEventListener('touchend',e=>{
+  if(!isDrag)return;isDrag=false;
+  if(!didDrag){const t=e.changedTouches&&e.changedTouches[0];if(t)selectAtPoint(t.clientX,t.clientY);return;}
+  const n=nearest();if(n<1)return;const d=(((-Math.PI/2-holeAngle(n))-dialRot+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;animTo(dialRot+d*1.02,500);
+});
 
 // ═══════════════════════════════
 // ORB — matte 2.5D, feathered
